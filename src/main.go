@@ -10,13 +10,13 @@ import (
 func main() {
 	natoms := 10
 	niter := 1
-	sim := sim.New(natoms) //sim.New??
-	//sim.ComputeNonBonded()
-	//fmt.Println("%d %f %f %f\n", 0, Epot, Ekin, Epot+Ekin)
+	sim := sim.New(natoms)
+	sim.ComputeNonBonded()
+	fmt.Println("%d %f %f %f\n", 0, sim.Pot, sim.Kin, sim.Pot+sim.Kin)
 	for n := 0; n < niter; n++ {
 		sim.FirstVV()
-		//sim.force[:] = Vec3{0, 0, 0} //memset((void *)force, 0, natoms*sizeof(rvec));
-		//sim.ComputeNonBonded()
+		sim.ResetForce()
+		sim.ComputeNonBonded()
 		sim.SecondVV()
 		temp := sim.GetTemperature()
 		//sim.ThermostatBerendesen(vel,natoms,dt)

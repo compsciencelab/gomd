@@ -1,5 +1,7 @@
 package sim
 
+import "math"
+
 const (
 	TimeFactor Real = 48.88821
 	Boltzman   Real = 0.001987191
@@ -18,8 +20,9 @@ type Sim struct {
 	sigma, eps         Real
 }
 
-func New(natoms int) Sim {
-	var sim Sim
+func New(natoms int) (sim *Sim) {
+	//var sim Sim
+	sim = new(Sim)
 	sim.pos = make([]Vec3, natoms, natoms)
 	sim.vel = make([]Vec3, natoms, natoms)
 	sim.force = make([]Vec3, natoms, natoms)
@@ -66,9 +69,9 @@ func (sim *Sim) FirstVV() {
 func (sim *Sim) SecondVV() {
 	imass := Real(1.0 / sim.mass) //is this Real or double?
 	tmpE := Real(0.0)
-	coeffvel := 0.5 * sim.dt * imass
-	//Velocity update, second part//
+	coeffvel := Real(0.5) * sim.dt * imass
 	for i := 0; i < sim.natoms; i++ {
+		//vec.Inc(sim.vel[i],vec.Scale(coeffvel,sim.force[i]))
 		sim.vel[i].X += coeffvel * sim.force[i].X
 		sim.vel[i].Y += coeffvel * sim.force[i].Y
 		sim.vel[i].Z += coeffvel * sim.force[i].Z
@@ -77,23 +80,26 @@ func (sim *Sim) SecondVV() {
 	sim.Kin = tmpE * 0.5 * sim.mass
 }
 
-/*
-func ComputeNonBonded(sim *Sim) {
+func (sim *Sim) ResetForce() {
+	for i := 0; i < sim.natoms; i++ {
+		sim.force[i] = Vec3{0, 0, 0}
+	}
+
+}
+func (sim *Sim) ComputeNonBonded() {
 	Epot := Real(0)
 	rcut2 := Real(12.0 * 12.0)
-	pos := &sim.pos     //correcto?
-	force := &sim.force //correcto?
-	A := Real(4.0 * sim.eps * Pow(sim.sigma, 12.0))
-	B := Real(4.0 * sim.eps * Pow(sim.sigma, 6.0))
+	A := sim.eps * Real(4.0*math.Pow(float64(sim.sigma), 12.0))
+	B := sim.eps * Real(4.0*math.Pow(float64(sim.sigma), 6.0))
 	for i := 0; i < sim.natoms; i++ {
-		for j := i + 1; j < natoms; j++ {
+		for j := i + 1; j < sim.natoms; j++ {
 			var rij Vec3
-			rij.x = pos[i].x - pos[j].x
-			rij.y = pos[i].y - pos[j].y
-			rij.z = pos[i].z - pos[j].z
-			r2 := rij.x*rij.x + rij.y*rij.y + rij.z*rij.z
+			rij.X = sim.pos[i].X - sim.pos[j].X
+			rij.Y = sim.pos[i].Y - sim.pos[j].Y
+			rij.Z = sim.pos[i].Z - sim.pos[j].Z
+			r2 := rij.X*rij.X + rij.Y*rij.Y + rij.Z*rij.Z
 			if r2 < rcut2 {
-				r := Real(sqrt(r2))
+				r := Real(math.Sqrt(float64(r2)))
 				r_1 := 1.0 / r
 				r_2 := r_1 * r_1
 				r_6 := r_2 * r_2 * r_2
@@ -101,21 +107,20 @@ func ComputeNonBonded(sim *Sim) {
 
 				AmbTerm := (A*r_6 - B) * r_6
 				Epot += AmbTerm
-				force_r = (6.0*(A*r_12+AmbTerm)*r_1 - AmbTerm) * r_1
+				force_r := (Real(6.0)*(A*r_12+AmbTerm)*r_1 - AmbTerm) * r_1
 
 				var forceij Vec3
-				forceij.x = force_r * rij.x
-				force[i].x += forceij.x
-				force[j].x -= forceij.x
-				forceij.y = force_r * rij.y
-				force[i].y += forceij.y
-				force[j].y -= forceij.y
-				forceij.z = force_r * rij.z
-				force[i].z += forceij.z
-				force[j].z -= forceij.z
+				forceij.X = force_r * rij.X
+				sim.force[i].X += forceij.X
+				sim.force[j].X -= forceij.X
+				forceij.Y = force_r * rij.Y
+				sim.force[i].Y += forceij.Y
+				sim.force[j].Y -= forceij.Y
+				forceij.Z = force_r * rij.Z
+				sim.force[i].Z += forceij.Z
+				sim.force[j].Z -= forceij.Z
 			}
 		}
 	}
-	sim.pot = Epot
+	sim.Pot = Epot
 }
-*/
