@@ -1,6 +1,12 @@
 package sim
 
-import "math"
+import (
+	"bufio"
+	"encoding/csv"
+	"math"
+	"os"
+	"strconv"
+)
 
 const (
 	TimeFactor Real = 48.88821
@@ -18,9 +24,10 @@ type Sim struct {
 	natoms             int
 	dt, mass, Kin, Pot Real
 	sigma, eps         Real
+	box                Vec3
 }
 
-func New(natoms int) (sim *Sim) {
+func New(natoms int, box Vec3) (sim *Sim) {
 	//var sim Sim
 	sim = new(Sim)
 	sim.pos = make([]Vec3, natoms, natoms)
@@ -33,14 +40,25 @@ func New(natoms int) (sim *Sim) {
 	sim.eps = Real(0.238)
 	sim.dt = 1.0 / TimeFactor
 	sim.mass = Real(39.948)
+	sim.box = box
 	return sim
 }
 
-func Read(sim *Sim) {
-
+func (sim *Sim) Read(filename string) { //this is to read a tabular file. I start to love Python
+	f, _ := os.Open(filename)
+	r := csv.NewReader(bufio.NewReader(f))
+	result, _ := r.ReadAll()
+	for i := range result {
+		v0, _ := strconv.ParseFloat(result[i][0], 64)
+		v1, _ := strconv.ParseFloat(result[i][1], 64)
+		v2, _ := strconv.ParseFloat(result[i][2], 64)
+		sim.pos[i].X = Real(v0)
+		sim.pos[i].Y = Real(v1)
+		sim.pos[i].Z = Real(v2)
+	}
 }
 
-func Write(sim *Sim) {
+func (sim *Sim) Write(filename string) {
 
 }
 
@@ -86,6 +104,19 @@ func (sim *Sim) ResetForce() {
 	}
 
 }
+
+func round(x Real) Real {
+	return Real(math.Floor(float64(x)))
+}
+
+func dist2pbc(dist, box Vec3) Real {
+	v := Vec3{
+		dist.X - box.X*round(dist.X/box.X),
+		dist.Y - box.Y*round(dist.Y/box.Y),
+		dist.Y - box.Y*round(dist.Y/box.Y)}
+	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
+}
+
 func (sim *Sim) ComputeNonBonded() {
 	Epot := Real(0)
 	rcut2 := Real(12.0 * 12.0)
@@ -93,30 +124,22 @@ func (sim *Sim) ComputeNonBonded() {
 	B := sim.eps * Real(4.0*math.Pow(float64(sim.sigma), 6.0))
 	for i := 0; i < sim.natoms; i++ {
 		for j := i + 1; j < sim.natoms; j++ {
-			var rij Vec3
-			rij.X = sim.pos[i].X - sim.pos[j].X
-			rij.Y = sim.pos[i].Y - sim.pos[j].Y
-			rij.Z = sim.pos[i].Z - sim.pos[j].Z
-			r2 := rij.X*rij.X + rij.Y*rij.Y + rij.Z*rij.Z
+			rij := Vec3{sim.pos[i].X - sim.pos[j].X, sim.pos[i].Y - sim.pos[j].Y, sim.pos[i].Z - sim.pos[j].Z}
+			//r2 := rij.X*rij.X + rij.Y*rij.Y + rij.Z*rij.Z
+			r2 := dist2pbc(rij, sim.box)
 			if r2 < rcut2 {
-				r := Real(math.Sqrt(float64(r2)))
-				r_1 := 1.0 / r
-				r_2 := r_1 * r_1
-				r_6 := r_2 * r_2 * r_2
-				r_12 := r_6 * r_6
-
-				AmbTerm := (A*r_6 - B) * r_6
+				rminus1 := 1.0 / Real(math.Sqrt(float64(r2)))
+				rminus2 := rminus1 * rminus1
+				rminus6 := rminus2 * rminus2 * rminus2
+				rminus12 := rminus6 * rminus6
+				AmbTerm := (A*rminus6 - B) * rminus6
 				Epot += AmbTerm
-				force_r := (Real(6.0)*(A*r_12+AmbTerm)*r_1 - AmbTerm) * r_1
-
-				var forceij Vec3
-				forceij.X = force_r * rij.X
+				forcer := (Real(6.0)*(A*rminus12+AmbTerm)*rminus1 - AmbTerm) * rminus1
+				forceij := Vec3{forcer * rij.X, forcer * rij.Y, forcer * rij.Z}
 				sim.force[i].X += forceij.X
 				sim.force[j].X -= forceij.X
-				forceij.Y = force_r * rij.Y
 				sim.force[i].Y += forceij.Y
 				sim.force[j].Y -= forceij.Y
-				forceij.Z = force_r * rij.Z
 				sim.force[i].Z += forceij.Z
 				sim.force[j].Z -= forceij.Z
 			}
