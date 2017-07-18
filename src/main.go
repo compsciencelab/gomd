@@ -10,7 +10,7 @@ import (
 func main() {
 	natoms := 10
 	niter := 1
-	sim := sim.New(natoms)
+	sim := sim.New(natoms, sim.Vec3{50, 50, 50})
 	sim.ComputeNonBonded()
 	fmt.Println("%d %f %f %f\n", 0, sim.Pot, sim.Kin, sim.Pot+sim.Kin)
 	for n := 0; n < niter; n++ {
