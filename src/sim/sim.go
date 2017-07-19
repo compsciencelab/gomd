@@ -14,7 +14,8 @@ const (
 	Boltzman   Real = 0.001987191
 )
 
-type Real float32
+//type Real float32
+type Real float64
 
 type Vec3 struct {
 	X, Y, Z Real
@@ -103,7 +104,6 @@ func (sim *Sim) SecondVV() {
 	tmpE := Real(0.0)
 	coeffvel := Real(0.5) * sim.dt * imass
 	for i := 0; i < sim.natoms; i++ {
-		//vec.Inc(sim.vel[i],vec.Scale(coeffvel,sim.force[i]))
 		sim.vel[i].X += coeffvel * sim.force[i].X
 		sim.vel[i].Y += coeffvel * sim.force[i].Y
 		sim.vel[i].Z += coeffvel * sim.force[i].Z
@@ -120,14 +120,13 @@ func (sim *Sim) ResetForce() {
 }
 
 func round(x Real) Real {
-	return Real(math.Floor(float64(x)))
+	return Real(math.Floor(0.5 + float64(x)))
 }
 
 func dist2pbc(dist, box Vec3) Real {
-	v := Vec3{
-		dist.X - box.X*round(dist.X/box.X),
+	v := Vec3{dist.X - box.X*round(dist.X/box.X),
 		dist.Y - box.Y*round(dist.Y/box.Y),
-		dist.Y - box.Y*round(dist.Y/box.Y)}
+		dist.Z - box.Z*round(dist.Z/box.Z)}
 	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
 }
 
