@@ -1,11 +1,12 @@
 package sim
 
 import (
-	"bufio"
-	"encoding/csv"
+	"fmt"
+	"io/ioutil"
 	"math"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -45,20 +46,33 @@ func New(natoms int, box Vec3) (sim *Sim) {
 }
 
 func (sim *Sim) Read(filename string) { //this is to read a tabular file. I start to love Python
-	f, _ := os.Open(filename)
-	r := csv.NewReader(bufio.NewReader(f))
-	result, _ := r.ReadAll()
-	for i := range result {
-		v0, _ := strconv.ParseFloat(result[i][0], 64)
-		v1, _ := strconv.ParseFloat(result[i][1], 64)
-		v2, _ := strconv.ParseFloat(result[i][2], 64)
-		sim.pos[i].X = Real(v0)
-		sim.pos[i].Y = Real(v1)
-		sim.pos[i].Z = Real(v2)
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
 	}
+	result := strings.Split(string(content), "\n") //splits seems to add and extra line, so I check num values
+	for i := range result {
+		values := strings.Fields(result[i])
+		if len(values) == 3 {
+			v0, _ := strconv.ParseFloat(values[0], 64)
+			v1, _ := strconv.ParseFloat(values[1], 64)
+			v2, _ := strconv.ParseFloat(values[2], 64)
+			sim.pos[i].X = Real(v0)
+			sim.pos[i].Y = Real(v1)
+			sim.pos[i].Z = Real(v2)
+		}
+	}
+
 }
 
 func (sim *Sim) Write(filename string) {
+	fo, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	for i := range sim.pos {
+		fmt.Fprintf(fo, "%f %f %f\n", sim.pos[i].X, sim.pos[i].Y, sim.pos[i].Z)
+	}
 
 }
 
