@@ -30,7 +30,6 @@ type Sim struct {
 }
 
 func New(natoms int, box Vec3) (sim *Sim) {
-	//var sim Sim
 	sim = new(Sim)
 	sim.pos = make([]Vec3, natoms, natoms)
 	sim.vel = make([]Vec3, natoms, natoms)
@@ -85,7 +84,6 @@ func (sim *Sim) FirstVV() {
 	//First part of Velocity Verlet
 	imass := 1.0 / sim.mass
 	dt := sim.dt
-	//pos := &sim.pos  //can I do name aliasing?
 	for i := 0; i < sim.natoms; i++ {
 		coeff := 0.5 * dt * dt * imass
 		sim.pos[i].X += dt*sim.vel[i].X + coeff*sim.force[i].X
@@ -100,7 +98,7 @@ func (sim *Sim) FirstVV() {
 }
 
 func (sim *Sim) SecondVV() {
-	imass := Real(1.0 / sim.mass) //is this Real or double?
+	imass := Real(1.0 / sim.mass)
 	tmpE := Real(0.0)
 	coeffvel := Real(0.5) * sim.dt * imass
 	for i := 0; i < sim.natoms; i++ {
@@ -123,30 +121,28 @@ func round(x Real) Real {
 	return Real(math.Floor(0.5 + float64(x)))
 }
 
-func dist2pbc(dist, box Vec3) Real {
-	v := Vec3{dist.X - box.X*round(dist.X/box.X),
+func pbcdist(dist, box Vec3) Vec3 {
+	return Vec3{
+		dist.X - box.X*round(dist.X/box.X),
 		dist.Y - box.Y*round(dist.Y/box.Y),
 		dist.Z - box.Z*round(dist.Z/box.Z)}
-	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
 }
 
 func (sim *Sim) ComputeNonBonded() {
-	Epot := Real(0)
 	rcut2 := Real(12.0 * 12.0)
 	A := sim.eps * Real(4.0*math.Pow(float64(sim.sigma), 12.0))
 	B := sim.eps * Real(4.0*math.Pow(float64(sim.sigma), 6.0))
 	for i := 0; i < sim.natoms; i++ {
 		for j := i + 1; j < sim.natoms; j++ {
-			rij := Vec3{sim.pos[i].X - sim.pos[j].X, sim.pos[i].Y - sim.pos[j].Y, sim.pos[i].Z - sim.pos[j].Z}
-			//r2 := rij.X*rij.X + rij.Y*rij.Y + rij.Z*rij.Z
-			r2 := dist2pbc(rij, sim.box)
+			rij := pbcdist(Vec3{sim.pos[i].X - sim.pos[j].X, sim.pos[i].Y - sim.pos[j].Y, sim.pos[i].Z - sim.pos[j].Z}, sim.box)
+			r2 := rij.X*rij.X + rij.Y*rij.Y + rij.Z*rij.Z
 			if r2 < rcut2 {
 				rminus1 := 1.0 / Real(math.Sqrt(float64(r2)))
 				rminus2 := rminus1 * rminus1
 				rminus6 := rminus2 * rminus2 * rminus2
 				rminus12 := rminus6 * rminus6
 				AmbTerm := (A*rminus6 - B) * rminus6
-				Epot += AmbTerm
+				sim.Pot += AmbTerm
 				forcer := (Real(6.0)*(A*rminus12+AmbTerm)*rminus1 - AmbTerm) * rminus1
 				forceij := Vec3{forcer * rij.X, forcer * rij.Y, forcer * rij.Z}
 				sim.force[i].X += forceij.X
@@ -158,5 +154,4 @@ func (sim *Sim) ComputeNonBonded() {
 			}
 		}
 	}
-	sim.Pot = Epot
 }

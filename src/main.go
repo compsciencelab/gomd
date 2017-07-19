@@ -10,10 +10,10 @@ import (
 func main() {
 	natoms := 3188
 	niter := 1000
-	sim := sim.New(natoms, sim.Vec3{90, 90, 90})
+	sim := sim.New(natoms, sim.Vec3{100, 100, 100})
 	sim.Read("../input_coor.dat")
 	sim.ComputeNonBonded()
-	fmt.Println("# ts, Pot, Kin, Temp, Tot")
+	fmt.Println("ts Pot Kin Temp Tot")
 	fmt.Println(0, sim.Pot, sim.Kin, 0, sim.Pot+sim.Kin)
 	for n := 0; n < niter; n++ {
 		sim.FirstVV()
@@ -22,7 +22,7 @@ func main() {
 		sim.SecondVV()
 		temp := sim.GetTemperature()
 		//sim.ThermostatBerendesen(vel,natoms,dt)
-		if math.Remainder(float64(n), 1) == 0 {
+		if math.Remainder(float64(n), 10) == 0 {
 			fmt.Println(n, sim.Kin, sim.Pot, temp, sim.Kin+sim.Pot)
 		}
 	}
