@@ -8,9 +8,12 @@ import (
 )
 
 func main() {
-	natoms := 3188
+	/*natoms := 3188
 	niter := 1000
-	sim := sim.New(natoms, sim.Vec3{100, 100, 100})
+	sim := sim.New(natoms, sim.Vec3{100, 100, 100})*/
+	natoms := 3
+	niter := 1000
+	sim := sim.New(natoms, sim.Vec3{10, 10, 10})
 	sim.Read("../input_coor.dat")
 	sim.ComputeNonBonded()
 	fmt.Println("ts Pot Kin Temp Tot")
@@ -22,8 +25,8 @@ func main() {
 		sim.SecondVV()
 		temp := sim.GetTemperature()
 		//sim.ThermostatBerendesen(vel,natoms,dt)
-		if math.Remainder(float64(n), 10) == 0 {
-			fmt.Println(n, sim.Kin, sim.Pot, temp, sim.Kin+sim.Pot)
+		if math.Remainder(float64(n), 1) == 0 {
+			fmt.Println(n, sim.Pot, sim.Kin, sim.Kin+sim.Pot, temp)
 		}
 	}
 	sim.Write("output.dat")
