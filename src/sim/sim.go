@@ -120,14 +120,19 @@ func (sim *Sim) ResetForce() {
 }
 
 func round(x Real) Real {
-	return Real(math.Floor(float64(x)))
+	fv := Real(math.Floor(float64(x)))
+	if (x - fv) > 0.5 {
+		return Real(math.Floor(float64(x + 0.5)))
+	} else {
+		return Real(fv)
+	}
 }
 
 func dist2pbc(dist, box Vec3) Real {
 	v := Vec3{
 		dist.X - box.X*round(dist.X/box.X),
 		dist.Y - box.Y*round(dist.Y/box.Y),
-		dist.Y - box.Y*round(dist.Y/box.Y)}
+		dist.Z - box.Z*round(dist.Z/box.Z)}
 	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
 }
 
