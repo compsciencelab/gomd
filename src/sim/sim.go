@@ -143,7 +143,7 @@ func (sim *Sim) ComputeNonBonded() {
 				rminus12 := rminus6 * rminus6
 				AmbTerm := (A*rminus6 - B) * rminus6
 				sim.Pot += AmbTerm
-				forcer := (Real(6.0)*(A*rminus12+AmbTerm)*rminus1 - AmbTerm) * rminus1
+				forcer := Real(6.0)*(A*rminus12+AmbTerm)*rminus1
 				forceij := Vec3{forcer * rij.X, forcer * rij.Y, forcer * rij.Z}
 				sim.force[i].X += forceij.X
 				sim.force[j].X -= forceij.X
